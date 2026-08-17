@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serious Apology 🚨</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;overflow:hidden;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+background:linear-gradient(-45deg,#fff7fb,#eadfff,#d9d4ff,#ffe0ec);
+background-size:400% 400%;
+animation:gradientShift 12s ease infinite;
+color:#30253a;position:relative}
+
+@keyframes gradientShift{
+0%{background-position:0% 50%}
+50%{background-position:100% 50%}
+100%{background-position:0% 50%}
+}
+
+.card{width:min(92%,440px);padding:30px 24px;text-align:center;background:#ffffffee;
+border:2px solid #fff;border-radius:30px;box-shadow:0 20px 70px #4b315633;
+position:relative;overflow:hidden}
+
+.badge{display:inline-block;padding:7px 12px;border-radius:999px;background:#ffe0ec;
+font-size:13px;font-weight:700;animation:popIn .4s cubic-bezier(.34,1.56,.64,1)}
+
+.emoji{font-size:58px;margin:12px 0 4px;animation:bounceIn .6s cubic-bezier(.34,1.56,.64,1)}
+
+h1{font-size:29px;margin:4px 0 12px;animation:slideUp .5s ease .1s both}
+
+p{font-size:17px;line-height:1.55;animation:slideUp .5s ease .18s both}
+
+button{border:0;border-radius:999px;padding:13px 20px;margin:7px 4px;font-size:16px;
+font-weight:700;cursor:pointer;background:#30253a;color:#fff;box-shadow:0 6px 14px #30253a22;
+transition:transform .15s ease, box-shadow .15s ease;
+animation:slideUp .5s ease .26s both}
+
+button:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 10px 20px #30253a33}
+button:active{transform:translateY(0) scale(.97)}
+
+button.alt{background:#ffe0ec;color:#4a2638}
+
+.bar{height:10px;background:#eee;border-radius:20px;overflow:hidden;margin:18px 0;
+animation:slideUp .5s ease .22s both}
+.fill{height:100%;width:0;background:linear-gradient(90deg,#30253a,#7a5aa8);
+transition:width 1.6s cubic-bezier(.22,1,.36,1);border-radius:20px;
+box-shadow:0 0 12px #7a5aa888}
+
+.list{text-align:left;margin:16px auto;max-width:330px}
+.list div{padding:9px 12px;margin:7px 0;background:#faf6ff;border-radius:14px;
+opacity:0;transform:translateX(-14px);
+animation:slideIn .45s ease forwards}
+.list div:nth-child(1){animation-delay:.15s}
+.list div:nth-child(2){animation-delay:.28s}
+.list div:nth-child(3){animation-delay:.41s}
+.list div:nth-child(4){animation-delay:.54s}
+
+.tiny{font-size:13px;opacity:.65;animation:slideUp .5s ease .3s both}
+
+@keyframes popIn{
+from{opacity:0;transform:scale(.6)}
+to{opacity:1;transform:scale(1)}
+}
+@keyframes bounceIn{
+0%{opacity:0;transform:scale(.3) rotate(-8deg)}
+55%{opacity:1;transform:scale(1.15) rotate(4deg)}
+75%{transform:scale(.95) rotate(-2deg)}
+100%{transform:scale(1) rotate(0)}
+}
+@keyframes slideUp{
+from{opacity:0;transform:translateY(14px)}
+to{opacity:1;transform:translateY(0)}
+}
+@keyframes slideIn{
+from{opacity:0;transform:translateX(-14px)}
+to{opacity:1;transform:translateX(0)}
+}
+@keyframes shake{
+0%,100%{transform:translateX(0)}
+20%{transform:translateX(-8px)}
+40%{transform:translateX(7px)}
+60%{transform:translateX(-5px)}
+80%{transform:translateX(3px)}
+}
+.shake{animation:shake .5s ease}
+
+.card.fade-swap{animation:cardSwap .35s ease}
+@keyframes cardSwap{
+0%{opacity:0;transform:scale(.96)}
+100%{opacity:1;transform:scale(1)}
+}
+
+.confetti{position:fixed;top:-10px;font-size:22px;pointer-events:none;
+animation:fall linear forwards}
+@keyframes fall{
+to{transform:translateY(105vh) rotate(360deg);opacity:.9}
+}
+
+.heart-ask{margin-top:18px;padding-top:16px;border-top:1px dashed #e0d3f0;
+animation:slideUp .5s ease .4s both}
+.heart-emoji{font-size:40px;margin-top:6px;
+animation:pulseHeart 1.3s ease-in-out infinite}
+@keyframes pulseHeart{
+0%,100%{transform:scale(1)}
+50%{transform:scale(1.18)}
+}
+
+.restart{background:transparent;color:#7a5aa8;box-shadow:none;font-size:13px;
+padding:8px 14px;margin-top:6px}
+.restart:hover{transform:none;text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="card" id="app"></div>
+<script>
+let step=0;
+const pages=[
+`<div class="emoji">🥺</div><h1>Baani, before anything else…</h1>
+<p>I'm actually sorry about yesterday night. I didn't mean to make you feel that way, and it's been on my mind since.</p>
+<p class="tiny">Okay, now let the ridiculous part begin.</p>
+<button onclick="next()">Continue 😅</button>`,
+`<span class="badge">🚨 EMERGENCY NOTICE</span>
+<div class="emoji">🧑‍⚖️</div><h1>The Court of Baani Has Convened.</h1>
+<p>There has been a serious misunderstanding yesterday night.</p>
+<p><b>Accused:</b> Yuvraj 😭<br><b>Charge:</b> Being terrible at understanding hints.</p>
+<button onclick="next()">See my defense 👀</button>`,
+`<span class="badge">CASE FILE #001</span><div class="emoji">🤦‍♂️</div>
+<h1>My Defense</h1>
+<p>I thought I was being caring when I said:</p>
+<p><b>“Take your medicine and go to sleep.”</b></p>
+<p>Apparently the correct response was to understand the vibe. My brain has submitted its resignation.</p>
+<button onclick="next()">Continue 😂</button>`,
+`<span class="badge">IMPORTANT EVIDENCE</span><div class="emoji">🕵️‍♂️</div>
+<h1>Things I Definitely Don't Want To Lose</h1>
+<div class="list">
+<div>😂 Your stupid jokes</div>
+<div>😌 Your random messages</div>
+<div>😈 You annoying me</div>
+<div>🫶 You being you</div>
+</div>
+<p>So please don't actually retire from joking.</p>
+<button onclick="next()">One more thing…</button>`,
+`<span class="badge">OFFICIAL STATEMENT</span><div class="emoji">📢</div>
+<h1>Baani, I Wasn't Choosing Anyone Else.</h1>
+<p>I wasn't trying to push you away, and I definitely wasn't trying to make you feel unimportant.</p>
+<p>I just completely fumbled the moment. 😭</p>
+<button onclick="next()">Final verdict 👩‍⚖️</button>`,
+`<span class="badge">VERDICT</span><div class="emoji">⚖️</div>
+<h1>GUILTY… of being dumb. 😂</h1>
+<p>Sentence:</p>
+<p><b>1 apology + unlimited permission for you to keep annoying me.</b></p>
+<div class="bar"><div class="fill" id="fill"></div></div>
+<p class="tiny">Apology loading…</p>
+<button onclick="forgive()">Grant mercy 🫶</button>
+<button class="alt" onclick="notYet()">Not yet 😤</button>`,
+`<span class="badge">MERCY GRANTED 🫶</span><div class="emoji">🎊</div>
+<h1>The Court Thanks You.</h1>
+<p>Your honor has officially accepted the apology.</p>
+<div class="list">
+<div>✅ Grudge: dismissed</div>
+<div>✅ Jokes: reinstated</div>
+<div>✅ Annoying privileges: restored</div>
+</div>
+<button onclick="closeCase()">Read the closing statement 📜</button>`,
+`<span class="badge">CASE CLOSED ❤️</span><div class="emoji">🥹</div>
+<h1>Thank You, Baani.</h1>
+<p>Good morning my sunshine, I hope your morning goes great. Make sure to take your medicine on time and wear a face mask if possible. Eat something other than chaaa. Enjoy your day.</p>
+<p><b>Good morning, troublemaker. ☀️</b></p>
+<p class="tiny">P.S. I still expect the jokes.</p>
+<div class="heart-ask">
+ <p><b>If you forgive me…</b><br>send me a heart 💌</p>
+ <div class="heart-emoji">❤️</div>
+</div>
+<button class="restart" onclick="restart()">↻ Watch it again</button>`
+];
+
+const app=document.getElementById("app");
+
+function render(){
+ app.classList.remove("fade-swap");
+ void app.offsetWidth; // restart animation
+ app.innerHTML=pages[step];
+ app.classList.add("fade-swap");
+ if(step===4){
+   const fill=document.getElementById("fill");
+   requestAnimationFrame(()=>{fill.style.width="100%"});
+ }
+}
+
+function next(){step=Math.min(step+1,pages.length-3);render()}
+
+function closeCase(){step=pages.length-1;render()}
+
+function restart(){step=0;render()}
+
+function forgive(){
+ step=pages.length-2;
+ render();
+ launchConfetti();
+}
+
+function notYet(){
+ app.classList.remove("fade-swap");
+ void app.offsetWidth;
+ app.classList.add("shake");
+ setTimeout(()=>app.classList.remove("shake"),500);
+ app.innerHTML=
+ `<div class="emoji">😳</div><h1>Okay okay…</h1>
+ <p>I'll stop arguing with the judge.</p>
+ <p>But I'm appealing this decision tomorrow. 😂</p>
+ <button onclick="render()">Back to court 👩‍⚖️</button>`;
+}
+
+function launchConfetti(){
+ const emojis=["🎉","💖","✨","🎊","💫"];
+ for(let i=0;i<26;i++){
+  const c=document.createElement("div");
+  c.className="confetti";
+  c.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+  c.style.left=Math.random()*100+"vw";
+  c.style.animationDuration=(2.2+Math.random()*1.6)+"s";
+  c.style.animationDelay=(Math.random()*0.6)+"s";
+  document.body.appendChild(c);
+  setTimeout(()=>c.remove(),4200);
+ }
+}
+
+render();
+</script>
+</body>
+</html>
