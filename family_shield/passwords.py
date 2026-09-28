@@ -23,6 +23,10 @@ COMMON_PASSWORDS = {
     "princess", "000000", "1234567890", "india123", "passw0rd", "master",
 }
 
+# Attackers automatically try common swaps like "P@ssw0rd" for "password".
+LEET_SWAPS = str.maketrans({"@": "a", "4": "a", "3": "e", "1": "i", "!": "i",
+                            "0": "o", "$": "s", "5": "s", "7": "t"})
+
 SEQUENCES = ("abcdefghijklmnopqrstuvwxyz", "qwertyuiopasdfghjklzxcvbnm", "0123456789")
 
 
@@ -40,12 +44,27 @@ def character_pool_size(password):
     return pool
 
 
+def remove_repeats(password):
+    """'aaaa' -> 'a' and 'abababab' -> 'ab': repeating something adds almost nothing."""
+    return re.sub(r"(.+?)\1+", r"\1", password)
+
+
 def estimate_entropy_bits(password):
     """Entropy = length * log2(pool size). Each extra bit doubles the guesses."""
     pool = character_pool_size(password)
     if pool == 0:
         return 0.0
-    return len(password) * math.log2(pool)
+    return len(remove_repeats(password)) * math.log2(pool)
+
+
+def is_common_password(password):
+    """Catch common passwords even when dressed up, e.g. 'P@ssw0rd123!'."""
+    lowered = password.lower()
+    # Strip digits/symbols from the end ("password123!" -> "password"),
+    # then undo letter swaps ("p@ssw0rd" -> "password").
+    core = re.sub(r"[^a-z]+$", "", lowered)
+    return any(guess in COMMON_PASSWORDS
+               for guess in (lowered, core, core.translate(LEET_SWAPS)))
 
 
 def has_sequence(password, run=4):
@@ -63,8 +82,8 @@ def check_strength(password):
     """Return (score 0-4, label, list of problems) for a password."""
     problems = []
 
-    if password.lower() in COMMON_PASSWORDS:
-        return 0, "Very weak", ["This is one of the most common passwords in the world."]
+    if is_common_password(password):
+        return 0, "Very weak", ["This is (a small twist on) one of the world's most common passwords."]
 
     if re.search(r"(.)\1\1", password):
         problems.append("Avoid repeating the same character 3+ times (e.g. 'aaa').")
@@ -88,12 +107,18 @@ def check_strength(password):
         score, label = 3, "Strong"
     else:
         score, label = 4, "Very strong"
+
+    # Short passwords can be brute-forced whatever characters they use.
+    if len(password) < 8 and score > 1:
+        score, label = 1, "Weak"
+    elif len(password) < 12 and score > 2:
+        score, label = 2, "Okay"
     return score, label, problems
 
 
 def sha1_hex(password):
     """Hash the password. The same input always gives the same 40-char output."""
-    return hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
+    return hashlib.sha1(password.encode("utf-8", "surrogatepass")).hexdigest().upper()
 
 
 def count_in_breach_response(full_hash, response_text):

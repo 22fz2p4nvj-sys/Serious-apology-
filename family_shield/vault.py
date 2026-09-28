@@ -18,6 +18,7 @@ File format: MAGIC (4 bytes) + SALT (16 bytes) + Fernet token.
 
 import base64
 import os
+import unicodedata
 
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
@@ -37,8 +38,12 @@ def derive_key(passphrase, salt):
     n=2**15 makes each attempt take noticeable time and ~32 MB of memory,
     which barely affects you but slows down an attacker trying billions.
     """
+    # Accented letters like "é" can be typed as one or two characters
+    # depending on the device; normalising makes both give the same key.
+    passphrase = unicodedata.normalize("NFC", passphrase)
     kdf = Scrypt(salt=salt, length=32, n=2**15, r=8, p=1)
-    return base64.urlsafe_b64encode(kdf.derive(passphrase.encode("utf-8")))
+    # "surrogatepass" keeps odd bytes from a misconfigured terminal from crashing us.
+    return base64.urlsafe_b64encode(kdf.derive(passphrase.encode("utf-8", "surrogatepass")))
 
 
 def encrypt_bytes(data, passphrase):
@@ -60,10 +65,12 @@ def decrypt_bytes(blob, passphrase):
 
 def _write_new_file(path, data):
     """Write a file, refusing to overwrite something that already exists."""
-    if os.path.exists(path):
-        raise VaultError(f"{path} already exists - move or rename it first.")
-    with open(path, "wb") as handle:
-        handle.write(data)
+    # Mode "x" checks and creates in one step, so nothing can sneak in between.
+    try:
+        with open(path, "xb") as handle:
+            handle.write(data)
+    except FileExistsError:
+        raise VaultError(f"{path} already exists - move or rename it first.") from None
 
 
 def encrypt_file(path, passphrase):

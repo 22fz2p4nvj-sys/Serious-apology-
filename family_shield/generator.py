@@ -12,8 +12,8 @@ operating system's cryptographically secure randomness.
 import math
 import secrets
 
-# 256 short, common, easy-to-spell words. With 256 words, each word adds
-# log2(256) = 8 bits of entropy. The words must be picked at RANDOM by the
+# 270 short, common, easy-to-spell words. Each word adds log2(270), about
+# 8 bits of entropy. The words must be picked at RANDOM by the
 # computer - a human "randomly" choosing words is not random at all.
 WORDS = """
 able acid aged also area army away baby back ball band bank base bath bear

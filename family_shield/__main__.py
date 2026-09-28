@@ -1,6 +1,7 @@
 """Menu-driven entry point. Run with:  python -m family_shield"""
 
 import getpass
+import os
 import urllib.error
 
 from . import checklist, generator, links, passwords, vault
@@ -49,6 +50,9 @@ def make_passphrase():
 
 def encrypt_document():
     path = input("Path of the file to encrypt: ").strip().strip('"')
+    if not os.path.isfile(path):
+        print(f"Error: no file found at {path}")
+        return
     passphrase = getpass.getpass("Choose a vault passphrase (hidden): ")
     if getpass.getpass("Type it again: ") != passphrase:
         print("Passphrases didn't match. Nothing was changed.")

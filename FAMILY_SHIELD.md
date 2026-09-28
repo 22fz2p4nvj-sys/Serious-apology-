@@ -28,7 +28,24 @@ pip install -r requirements.txt
 python -m family_shield
 ```
 
-3. Run the tests: `python -m unittest`
+3. Run the tests: `python -m unittest -v` (takes about 25 seconds; the vault
+   tests are slow on purpose because each passphrase guess is made expensive).
+
+## How it is tested
+
+The 44 tests in `tests/test_family_shield.py` are a good way to learn how security
+software gets checked. They include:
+
+- **Attack cases:** disguised common passwords (`P@ssw0rd123`), look-alike
+  letters (`аpple.com` with a Cyrillic "а"), disguised IP addresses
+  (`http://3232235777/`), links hidden behind `@`.
+- **Tamper tests:** changing *any single byte* of an encrypted file, or cutting
+  it short, must be detected.
+- **Privacy test:** the breach lookup must never send the password or its full hash.
+- **Fuzzing:** thousands of random junk inputs must never crash a tool.
+- **False-alarm tests:** real sites (SBI, HDFC, Google, Amazon) must come out clean.
+- **Menu tests:** the whole program is driven with scripted typing, including
+  mistakes like mismatched passphrases, wrong file paths and invalid menu choices.
 
 ## Important safety notes
 

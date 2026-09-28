@@ -49,16 +49,23 @@ def _registered_domain(host):
 
 def check_link(url):
     """Return a list of warnings. An empty list means no red flags were found."""
-    if "://" not in url:
-        url = "http://" + url
-    parsed = urlparse(url.strip())
-    host = (parsed.hostname or "").lower()
+    url = url.strip()
+    if url.lower().startswith(("javascript:", "data:", "file:", "vbscript:")):
+        return ["Not a web page at all - this kind of link can run code or open local files."]
+    has_scheme = "://" in url
+    if not has_scheme:
+        url = "https://" + url
+    try:
+        parsed = urlparse(url)
+        host = (parsed.hostname or "").lower().rstrip(".")
+    except ValueError:
+        return ["This doesn't look like a valid web address."]
     warnings = []
 
     if not host:
         return ["This doesn't look like a valid web address."]
 
-    if parsed.scheme != "https":
+    if has_scheme and parsed.scheme != "https":
         warnings.append("Not HTTPS: anything you type could be read in transit.")
     if "@" in parsed.netloc:
         warnings.append("Contains '@': the real site is the part AFTER the @, not before.")
@@ -66,7 +73,11 @@ def check_link(url):
         ipaddress.ip_address(host)
         warnings.append("Uses a raw IP address instead of a name - real banks never do this.")
     except ValueError:
-        pass
+        # Browsers also accept disguised IPs: 3232235777, 0x7f000001, 127.1, 0177.0.0.1
+        if all(re.fullmatch(r"0x[0-9a-f]+|\d+", part) for part in host.split(".")):
+            warnings.append("Uses a disguised IP address (a number instead of a name).")
+    if not host.isascii():
+        warnings.append("Uses non-English letters that can imitate real ones (e.g. Cyrillic 'а').")
     if host.startswith("xn--") or ".xn--" in host:
         warnings.append("Uses look-alike international letters (punycode) to imitate a real name.")
     if host in SHORTENERS:
@@ -89,7 +100,8 @@ def check_link(url):
             )
             break
 
-    bait = sorted(word for word in BAIT_WORDS if word in url.lower())
+    # Only the site name matters here: real sites also have "/login" pages.
+    bait = sorted(word for word in BAIT_WORDS if word in host)
     if len(bait) >= 2:
         warnings.append("Contains pressure words (" + ", ".join(bait) + ") used in scam links.")
 
