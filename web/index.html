@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Family Shield</title>
+<meta name="description" content="Free tools that protect a family's passwords, documents and money. Everything runs on your own device.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  :root {
+    --paper: #f3f5f1;
+    --surface: #ffffff;
+    --sunken: #e8ece6;
+    --ink: #15302a;
+    --muted: #52665f;
+    --line: #cfd8d1;
+    --accent: #0d6b62;
+    --accent-ink: #ffffff;
+    --safe: #2c7a4b;
+    --safe-bg: #e2f1e7;
+    --warn: #9a5b0b;
+    --warn-bg: #fbeed8;
+    --danger: #b3321f;
+    --danger-bg: #fbe4df;
+    --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Segoe UI", Verdana, system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0e1614; --surface: #16211e; --sunken: #1d2a26; --ink: #e3ece7; --muted: #9db1a9;
+      --line: #2e3f3a; --accent: #4fc2b3; --accent-ink: #06201c;
+      --safe: #7fd29d; --safe-bg: #173325; --warn: #f0b75c; --warn-bg: #36280f;
+      --danger: #ff8f7a; --danger-bg: #3d1a14;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0e1614; --surface: #16211e; --sunken: #1d2a26; --ink: #e3ece7; --muted: #9db1a9;
+    --line: #2e3f3a; --accent: #4fc2b3; --accent-ink: #06201c;
+    --safe: #7fd29d; --safe-bg: #173325; --warn: #f0b75c; --warn-bg: #36280f;
+    --danger: #ff8f7a; --danger-bg: #3d1a14;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  /* Our display rules would otherwise override the hidden attribute on tabs. */
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.55 var(--body);
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 22px; }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(34px, 7vw, 52px); font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: 26px; font-weight: 600; }
+  h3 { font-size: 18px; font-weight: 600; }
+  p { margin: 0; max-width: 65ch; }
+  .muted { color: var(--muted); }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+
+  header { display: grid; gap: 10px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand svg { flex: none; width: 48px; height: 56px; }
+  .promise {
+    display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+    background: var(--safe-bg); color: var(--safe); border-radius: 999px;
+    padding: 4px 14px; font-weight: 700; font-size: 15px;
+  }
+
+  nav {
+    display: flex; gap: 4px; border-bottom: 2px solid var(--line);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav a {
+    white-space: nowrap; flex: none;
+    color: var(--muted); text-decoration: none; font-weight: 700;
+    padding: 10px 14px; border-radius: 10px 10px 0 0; margin-bottom: -2px;
+    border-bottom: 3px solid transparent;
+  }
+  nav a:hover { color: var(--ink); background: var(--sunken); }
+  nav a[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  nav a:focus-visible, button:focus-visible, input:focus-visible, label.file:focus-within {
+    outline: 3px solid var(--accent); outline-offset: 2px;
+  }
+
+  section.tool { display: grid; gap: 18px; }
+  .intro { display: grid; gap: 6px; }
+  .threat { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--danger); }
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 20px; display: grid; gap: 14px;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .row > input { flex: 1 1 260px; min-width: 0; }
+
+  input[type="text"], input[type="password"], input[type="url"] {
+    font: 18px var(--body); color: var(--ink); background: var(--paper);
+    border: 2px solid var(--line); border-radius: 10px; padding: 11px 14px; width: 100%;
+  }
+  input:focus { border-color: var(--accent); }
+  button, label.file {
+    font: 700 16px var(--body); border-radius: 10px; padding: 11px 18px; cursor: pointer;
+    border: 2px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+  }
+  button.secondary, label.file { background: transparent; color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  label.file input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  label.check { display: flex; gap: 8px; align-items: center; font-size: 15px; color: var(--muted); cursor: pointer; }
+
+  .verdict { border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; }
+  .verdict.safe { background: var(--safe-bg); color: var(--safe); }
+  .verdict.warn { background: var(--warn-bg); color: var(--warn); }
+  .verdict.danger { background: var(--danger-bg); color: var(--danger); }
+  .verdict strong { font-size: 19px; }
+  .verdict ul { margin: 0; padding-left: 20px; color: var(--ink); }
+  .verdict li + li { margin-top: 4px; }
+
+  .meter { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .meter span { height: 10px; border-radius: 4px; background: var(--sunken); }
+  .meter[data-score="0"] span:nth-child(-n+1) { background: var(--danger); }
+  .meter[data-score="1"] span:nth-child(-n+2) { background: var(--danger); }
+  .meter[data-score="2"] span:nth-child(-n+3) { background: var(--warn); }
+  .meter[data-score="3"] span:nth-child(-n+4) { background: var(--safe); }
+  .meter[data-score="4"] span { background: var(--safe); }
+
+  .explain {
+    border-left: 3px solid var(--line); padding-left: 14px; font-size: 15px; color: var(--muted);
+    display: grid; gap: 6px;
+  }
+  .explain b { color: var(--ink); }
+  .hash { font-family: var(--mono); font-size: 14px; word-break: break-all; }
+  .hash .sent { background: var(--warn-bg); color: var(--warn); border-radius: 4px; padding: 0 3px; }
+
+  .phrases { display: grid; gap: 8px; }
+  .phrase {
+    display: flex; gap: 10px; align-items: center; justify-content: space-between;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px;
+  }
+  .phrase .mono { font-size: 17px; overflow-wrap: anywhere; }
+  .phrase button { padding: 6px 12px; font-size: 14px; flex: none; }
+
+  .vault-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .progress { height: 8px; background: var(--sunken); border-radius: 4px; overflow: hidden; }
+  .progress span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.1s linear; }
+  .filename { font-size: 15px; color: var(--muted); overflow-wrap: anywhere; }
+
+  .score-card { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+  .score {
+    font: 800 56px/1 var(--display); font-variant-numeric: tabular-nums; min-width: 3.2ch;
+  }
+  .questions { display: grid; gap: 0; }
+  .question {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-top: 1px solid var(--line);
+  }
+  .question p { flex: 1 1 320px; }
+  .weight { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .w3 { color: var(--danger); } .w2 { color: var(--warn); } .w1 { color: var(--muted); }
+  .yn { display: inline-flex; border: 2px solid var(--line); border-radius: 10px; overflow: hidden; flex: none; }
+  .yn button {
+    border: 0; border-radius: 0; background: transparent; color: var(--muted); padding: 7px 16px; font-size: 15px;
+  }
+  .yn button[aria-pressed="true"].yes { background: var(--safe); color: var(--surface); }
+  .yn button[aria-pressed="true"].no { background: var(--danger); color: var(--surface); }
+  ol.todo { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+
+  footer { font-size: 14px; color: var(--muted); display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 16px; }
+  footer a { color: var(--accent); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 48 56" aria-hidden="true">
+        <path d="M24 2 44 9v17c0 13-8.5 23-20 28C12.5 49 4 39 4 26V9z" fill="var(--accent)"/>
+        <path d="M16 27h16v13H16z" fill="var(--accent-ink)"/>
+        <path d="M19 27v-4a5 5 0 0 1 10 0v4" fill="none" stroke="var(--accent-ink)" stroke-width="3"/>
+        <circle cx="24" cy="33" r="2.2" fill="var(--accent)"/>
+      </svg>
+      <h1>Family Shield</h1>
+    </div>
+    <p class="muted">Five small tools against the ways families actually lose data and money: reused passwords, scam links, and lost phones full of ID scans.</p>
+    <span class="promise">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>
+      Runs on this device. Nothing you type is uploaded.
+    </span>
+  </header>
+
+  <nav role="tablist" aria-label="Tools">
+    <a href="#links" role="tab" id="tab-links">Scam links</a>
+    <a href="#passwords" role="tab" id="tab-passwords">Passwords</a>
+    <a href="#passphrases" role="tab" id="tab-passphrases">Passphrases</a>
+    <a href="#vault" role="tab" id="tab-vault">Document vault</a>
+    <a href="#checkup" role="tab" id="tab-checkup">Family check-up</a>
+  </nav>
+
+  <!-- Scam links ------------------------------------------------------- -->
+  <section class="tool" id="links" role="tabpanel" aria-labelledby="tab-links">
+    <div class="intro">
+      <span class="threat">Threat: phishing</span>
+      <h2>Is this link a scam?</h2>
+      <p class="muted">"Your KYC expires today, click here." Paste a link from an SMS, WhatsApp or email. Don't open it first.</p>
+    </div>
+    <div class="panel">
+      <form class="row" id="link-form">
+        <input type="text" id="link-input" autocomplete="off" spellcheck="false" aria-label="Link to check"
+               value="http://sbi-kyc-update.top/login">
+        <button type="submit">Check link</button>
+      </form>
+      <p class="muted" id="link-example-note" style="font-size:15px">Example of a real scam pattern, already checked. Paste your own link to replace it.</p>
+      <div id="link-result" aria-live="polite"></div>
+      <div class="explain">
+        <p><b>How it works:</b> scam links are built to look right at a glance. This checks for the tricks they use: fake bank names in front of someone else's domain, look-alike letters, hidden number addresses, and cheap throwaway domain endings.</p>
+        <p>No red flags doesn't prove a link is safe. For banks, open the official app or type the address yourself.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Passwords --------------------------------------------------------- -->
+  <section class="tool" id="passwords" role="tabpanel" aria-labelledby="tab-passwords" hidden>
+    <div class="intro">
+      <span class="threat">Threat: guessed or leaked passwords</span>
+      <h2>How strong is this password?</h2>
+      <p class="muted">Checked on this device as you type. Try one you use, or a new one you're thinking of.</p>
+    </div>
+    <div class="panel">
+      <div class="row">
+        <input type="password" id="pw-input" autocomplete="off" aria-label="Password to check" placeholder="Type a password">
+        <label class="check"><input type="checkbox" id="pw-show"> Show</label>
+      </div>
+      <div class="meter" id="pw-meter" data-score="-1" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+      <div id="pw-result" aria-live="polite"><p class="muted">Start typing to see a rating.</p></div>
+      <div class="row">
+        <button type="button" id="breach-btn" class="secondary" disabled>Check known data breaches</button>
+      </div>
+      <div id="breach-result" aria-live="polite"></div>
+      <div class="explain">
+        <p><b>Privacy:</b> the password is turned into a SHA-1 hash (a fingerprint that can't be reversed). Only the first 5 characters, highlighted below, go to the Have I Been Pwned service. It replies with hundreds of leaked hashes that start the same way, and the match is found here.</p>
+        <p class="hash" id="pw-hash">Hash appears here.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Passphrases ------------------------------------------------------- -->
+  <section class="tool" id="passphrases" role="tabpanel" aria-labelledby="tab-passphrases" hidden>
+    <div class="intro">
+      <span class="threat">Threat: one weak password reused everywhere</span>
+      <h2>Make a password you can remember</h2>
+      <p class="muted">Six random words beat "Rahul@1990". Pick one you like; each is freshly made by your device's secure random generator.</p>
+    </div>
+    <div class="panel">
+      <div class="phrases" id="phrases"></div>
+      <div class="row">
+        <button type="button" id="more-phrases">Make new ones</button>
+        <span class="muted" id="phrase-bits" style="font-size:15px"></span>
+      </div>
+      <div class="explain">
+        <p><b>Why words?</b> The computer picks each word at random from 270, so every word multiplies the guesses an attacker needs by 270. People choosing "random" words themselves is not random at all.</p>
+        <p>Best of all: use a password manager (Bitwarden is free) and only remember one of these.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Vault --------------------------------------------------------------- -->
+  <section class="tool" id="vault" role="tabpanel" aria-labelledby="tab-vault" hidden>
+    <div class="intro">
+      <span class="threat">Threat: a lost phone, laptop or pen drive</span>
+      <h2>Lock a family document</h2>
+      <p class="muted">Aadhaar, PAN, passport scans, insurance and medical papers. The locked copy is safe to keep in cloud storage or on a pen drive. The file never leaves this device.</p>
+    </div>
+    <div class="vault-grid">
+      <form class="panel" id="lock-form">
+        <h3>Lock a file</h3>
+        <label class="file">Choose file<input type="file" id="lock-file"></label>
+        <p class="filename" id="lock-name">No file chosen</p>
+        <input type="password" id="lock-pass" autocomplete="new-password" placeholder="Vault passphrase" aria-label="Vault passphrase">
+        <input type="password" id="lock-pass2" autocomplete="new-password" placeholder="Type it again" aria-label="Type the passphrase again">
+        <button type="submit" id="lock-btn">Lock and save</button>
+        <div class="progress" hidden id="lock-progress"><span></span></div>
+        <div id="lock-result" aria-live="polite"></div>
+      </form>
+      <form class="panel" id="unlock-form">
+        <h3>Unlock a file</h3>
+        <label class="file">Choose .fsv file<input type="file" id="unlock-file"></label>
+        <p class="filename" id="unlock-name">No file chosen</p>
+        <input type="password" id="unlock-pass" autocomplete="current-password" placeholder="Vault passphrase" aria-label="Vault passphrase">
+        <button type="submit" id="unlock-btn">Unlock and save</button>
+        <div class="progress" hidden id="unlock-progress"><span></span></div>
+        <div id="unlock-result" aria-live="polite"></div>
+      </form>
+    </div>
+    <div class="explain">
+      <p><b>If you forget the passphrase, nobody can open the file.</b> That is what makes it secure. Write it down and keep it somewhere physically safe.</p>
+      <p><b>How it works:</b> scrypt turns your passphrase into a key, slowly on purpose, so an attacker can only try a handful of guesses per second. The file is then encrypted with AES and sealed with HMAC, so any change to it is detected. Files work with the Family Shield desktop program too.</p>
+    </div>
+  </section>
+
+  <!-- Check-up ------------------------------------------------------------ -->
+  <section class="tool" id="checkup" role="tabpanel" aria-labelledby="tab-checkup" hidden>
+    <div class="intro">
+      <span class="threat">Threat: missing basics</span>
+      <h2>Family security check-up</h2>
+      <p class="muted">Answer for your whole household. You get a to-do list with the most important fixes first.</p>
+    </div>
+    <div class="panel">
+      <div class="score-card">
+        <div class="score" id="score">–</div>
+        <p class="muted" id="score-note">Answer the questions below to get your score.</p>
+      </div>
+      <div id="todo"></div>
+    </div>
+    <div class="panel questions" id="questions"></div>
+  </section>
+
+  <footer>
+    <p>Family Shield is a learning project. Source code, tests and the desktop version are in the project repository.</p>
+    <p>Breach data: <a href="https://haveibeenpwned.com/Passwords" target="_blank" rel="noopener">Have I Been Pwned</a>. Encryption library: scrypt-js (MIT).</p>
+  </footer>
+</div>
+
+<script src="scrypt.js"></script>
+<script src="shield-core.js"></script>
+<script>
+(function () {
+  "use strict";
+  const FS = window.FamilyShield;
+  const $ = (id) => document.getElementById(id);
+  const inArtifact = !!(window.claude && window.claude.use);
+
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(attrs || {})) {
+      if (key === "text") node.textContent = value; else node.setAttribute(key, value);
+    }
+    for (const child of children || []) node.append(child);
+    return node;
+  }
+
+  function verdict(kind, title, items) {
+    const box = el("div", { class: "verdict " + kind }, [el("strong", { text: title })]);
+    if (items && items.length) box.append(el("ul", {}, items.map((t) => el("li", { text: t }))));
+    return box;
+  }
+
+  function show(target, node) { target.replaceChildren(node); }
+
+  /* Tabs --------------------------------------------------------------- */
+  const tabs = ["links", "passwords", "passphrases", "vault", "checkup"];
+  function openTab(name) {
+    if (!tabs.includes(name)) name = "links";
+    for (const t of tabs) {
+      $(t).hidden = t !== name;
+      $("tab-" + t).setAttribute("aria-selected", String(t === name));
+    }
+    try { localStorage.setItem("fs-tab", name); } catch (storageBlocked) {}
+  }
+  document.querySelector("nav").addEventListener("click", (event) => {
+    const link = event.target.closest("a");
+    if (!link) return;
+    event.preventDefault();
+    const name = link.getAttribute("href").slice(1);
+    openTab(name);
+    try { history.replaceState(null, "", "#" + name); } catch (framed) {}
+  });
+  window.addEventListener("hashchange", () => openTab(location.hash.slice(1)));
+  let startTab = location.hash.slice(1);
+  if (!tabs.includes(startTab)) { try { startTab = localStorage.getItem("fs-tab") || "links"; } catch (e) { startTab = "links"; } }
+  openTab(startTab);
+
+  /* Scam links ----------------------------------------------------------- */
+  function runLinkCheck() {
+    const url = $("link-input").value;
+    const warnings = FS.checkLink(url);
+    if (!url.trim()) {
+      show($("link-result"), el("p", { class: "muted", text: "Paste a link above." }));
+    } else if (warnings.length === 0) {
+      show($("link-result"), verdict("safe", "No obvious red flags.",
+        ["Still, for banks and payments, use the official app instead of a link."]));
+    } else if (warnings.length === 1 && /valid web address/.test(warnings[0])) {
+      show($("link-result"), verdict("warn", warnings[0], ["Check you copied the whole link."]));
+    } else {
+      show($("link-result"), verdict("danger",
+        `${warnings.length} red flag${warnings.length > 1 ? "s" : ""}. Do not open this link.`, warnings));
+    }
+  }
+  $("link-form").addEventListener("submit", (event) => { event.preventDefault(); $("link-example-note").hidden = true; runLinkCheck(); });
+  $("link-input").addEventListener("input", () => { $("link-example-note").hidden = true; });
+  runLinkCheck();
+
+  /* Passwords ---------------------------------------------------------- */
+  let hashRun = 0;
+  async function runPasswordCheck() {
+    const pw = $("pw-input").value;
+    $("breach-result").replaceChildren();
+    $("breach-btn").disabled = !pw;
+    if (!pw) {
+      $("pw-meter").dataset.score = "-1";
+      show($("pw-result"), el("p", { class: "muted", text: "Start typing to see a rating." }));
+      $("pw-hash").textContent = "Hash appears here.";
+      return;
+    }
+    const { score, label, problems } = FS.checkStrength(pw);
+    $("pw-meter").dataset.score = String(score);
+    const kind = score >= 3 ? "safe" : score === 2 ? "warn" : "danger";
+    show($("pw-result"), verdict(kind, `${label} (${score}/4)`, problems));
+    const run = ++hashRun;
+    const hash = await FS.sha1Hex(pw);
+    if (run !== hashRun) return;
+    $("pw-hash").replaceChildren(el("span", { class: "sent", text: hash.slice(0, 5) }), hash.slice(5));
+  }
+  $("pw-input").addEventListener("input", runPasswordCheck);
+  $("pw-show").addEventListener("change", () => { $("pw-input").type = $("pw-show").checked ? "text" : "password"; });
+  $("breach-btn").addEventListener("click", async () => {
+    const pw = $("pw-input").value;
+    if (!pw) return;
+    $("breach-btn").disabled = true;
+    show($("breach-result"), el("p", { class: "muted", text: "Asking the breach service…" }));
+    try {
+      const count = await FS.timesSeenInBreaches(pw);
+      if ($("pw-input").value !== pw) return;
+      show($("breach-result"), count
+        ? verdict("danger", `Seen ${count.toLocaleString()} times in data breaches.`,
+            ["Attackers try leaked passwords first. Stop using it everywhere, starting with email and banking."])
+        : verdict("safe", "Not found in known breaches.", ["That's good, but not a guarantee it's strong."]));
+    } catch (error) {
+      show($("breach-result"), verdict("warn", "Couldn't reach the breach service.", [
+        inArtifact
+          ? "This hosted preview blocks outside connections. Use the GitHub Pages version or the desktop program for this check."
+          : "Check your internet connection and try again."]));
+    } finally {
+      $("breach-btn").disabled = !$("pw-input").value;
+    }
+  });
+
+  /* Passphrases -------------------------------------------------------- */
+  function makePhrases() {
+    const list = $("phrases");
+    list.replaceChildren();
+    for (let i = 0; i < 5; i++) {
+      const phrase = FS.generatePassphrase();
+      const text = el("span", { class: "mono", text: phrase });
+      const copy = el("button", { type: "button", class: "secondary", text: "Copy" });
+      copy.addEventListener("click", () => {
+        navigator.clipboard.writeText(phrase).then(() => { copy.textContent = "Copied"; }, () => {
+          const range = document.createRange();
+          range.selectNodeContents(text);
+          const selection = getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+          copy.textContent = "Selected - press Ctrl+C";
+        });
+      });
+      list.append(el("div", { class: "phrase" }, [text, copy]));
+    }
+    $("phrase-bits").textContent = `About ${Math.round(FS.passphraseEntropyBits())} bits of entropy each.`;
+  }
+  $("more-phrases").addEventListener("click", makePhrases);
+  makePhrases();
+
+  /* Vault ---------------------------------------------------------------- */
+  let downloadsPromise = null;
+  async function offerFile(filename, bytes) {
+    if (inArtifact) {
+      downloadsPromise = downloadsPromise || window.claude.use("downloads");
+      const downloads = await downloadsPromise;
+      if (!downloads) throw new Error("Saving files isn't available in this view.");
+      try {
+        await downloads.save({ filename, data: new Blob([bytes]) });
+      } catch (error) {
+        if (error && error.code === "declined") throw new Error("Save cancelled.");
+        if (error && error.code === "rejected_extension") {
+          throw new Error("This hosted page can't save this file type. Use the GitHub Pages version or the desktop program.");
+        }
+        throw new Error((error && error.message) || "The file couldn't be saved.");
+      }
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/octet-stream" }));
+    const link = el("a", { href: url, download: filename });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  function wireFileName(input, label) {
+    input.addEventListener("change", () => { label.textContent = input.files[0] ? input.files[0].name : "No file chosen"; });
+  }
+  wireFileName($("lock-file"), $("lock-name"));
+  wireFileName($("unlock-file"), $("unlock-name"));
+
+  function progressFor(barId) {
+    const bar = $(barId);
+    bar.hidden = false;
+    bar.firstElementChild.style.width = "0";
+    return (fraction) => { bar.firstElementChild.style.width = Math.round(fraction * 100) + "%"; };
+  }
+
+  async function busy(buttonId, work) {
+    const button = $(buttonId);
+    const text = button.textContent;
+    button.disabled = true;
+    button.textContent = "Working…";
+    try { await work(); } finally { button.disabled = false; button.textContent = text; }
+  }
+
+  $("lock-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const out = $("lock-result");
+    const file = $("lock-file").files[0];
+    const pass = $("lock-pass").value;
+    if (!file) return show(out, verdict("warn", "Choose a file to lock first."));
+    if (pass !== $("lock-pass2").value) return show(out, verdict("warn", "The two passphrases don't match.", ["Nothing was changed."]));
+    if (FS.checkStrength(pass).score < 3) {
+      return show(out, verdict("danger", "That passphrase is too weak for protecting documents.",
+        ["Use the Passphrases tab for a strong one you can remember."]));
+    }
+    out.replaceChildren();
+    busy("lock-btn", async () => {
+      try {
+        const data = new Uint8Array(await file.arrayBuffer());
+        const locked = await FS.encryptBytes(data, pass, progressFor("lock-progress"));
+        // The hosted preview only saves certain file types, so ".fsv" rides as ".fsv.txt" there.
+        const name = file.name + (inArtifact ? ".fsv.txt" : ".fsv");
+        await offerFile(name, locked);
+        show(out, verdict("safe", `Locked copy saved as ${name}.`, [
+          "Unlock it once to check it works, then delete the original.",
+          "Keep the passphrase written down somewhere safe."]));
+      } catch (error) {
+        show(out, verdict("danger", error.message || "Locking failed."));
+      }
+    });
+  });
+
+  $("unlock-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const out = $("unlock-result");
+    const file = $("unlock-file").files[0];
+    const pass = $("unlock-pass").value;
+    if (!file) return show(out, verdict("warn", "Choose a locked .fsv file first."));
+    out.replaceChildren();
+    busy("unlock-btn", async () => {
+      try {
+        const blob = new Uint8Array(await file.arrayBuffer());
+        const data = await FS.decryptBytes(blob, pass, progressFor("unlock-progress"));
+        let name = file.name.replace(/\.fsv(\.txt)?$/i, "");
+        if (!name || name === file.name) name = "unlocked-" + file.name;
+        await offerFile(name, data);
+        show(out, verdict("safe", `Unlocked and saved as ${name}.`));
+      } catch (error) {
+        show(out, verdict("danger", error.message || "Unlocking failed."));
+      }
+    });
+  });
+
+  /* Check-up ----------------------------------------------------------- */
+  const answers = new Array(FS.QUESTIONS.length).fill(null);
+  const PRIORITY = { 3: "Critical", 2: "Important", 1: "Good idea" };
+  FS.QUESTIONS.forEach(([question, weight], i) => {
+    const yes = el("button", { type: "button", class: "yes", "aria-pressed": "false", text: "Yes" });
+    const no = el("button", { type: "button", class: "no", "aria-pressed": "false", text: "No" });
+    const pick = (value) => {
+      answers[i] = value;
+      yes.setAttribute("aria-pressed", String(value === true));
+      no.setAttribute("aria-pressed", String(value === false));
+      updateScore();
+    };
+    yes.addEventListener("click", () => pick(true));
+    no.addEventListener("click", () => pick(false));
+    $("questions").append(el("div", { class: "question" }, [
+      el("p", {}, [el("span", { class: "weight w" + weight, text: PRIORITY[weight] }), el("br"), question]),
+      el("div", { class: "yn", role: "group", "aria-label": question }, [yes, no]),
+    ]));
+  });
+  function updateScore() {
+    const answered = answers.filter((a) => a !== null).length;
+    if (answered < answers.length) {
+      $("score").textContent = "–";
+      $("score-note").textContent = `${answered} of ${answers.length} answered.`;
+      $("todo").replaceChildren();
+      return;
+    }
+    const { percent, todo } = FS.scoreAnswers(answers);
+    $("score").textContent = percent + "%";
+    $("score-note").textContent = todo.length ? "Your to-do list, most important first:" : "Excellent. Re-check every few months.";
+    $("todo").replaceChildren(el("ol", { class: "todo" }, todo.map(([weight, advice]) =>
+      el("li", {}, [el("span", { class: "weight w" + weight, text: PRIORITY[weight] + " " }), advice]))));
+  }
+})();
+</script>
+</body>
+</html>

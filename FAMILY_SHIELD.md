@@ -14,6 +14,22 @@ so reading the code is part of learning.
 | Fake "KYC expiring / prize / refund" links (phishing) | Suspicious link checker | `family_shield/links.py` |
 | Missing basics (2FA, updates, OTP sharing, backups) | Family security check-up | `family_shield/checklist.py` |
 
+## Use it on the web
+
+The `web/` folder is the same toolkit as a web page: open `web/index.html` in any
+browser. Everything runs on your own device; documents and passwords are never
+uploaded. Files locked on the web page unlock in the desktop program, and the
+other way round.
+
+**Put it online free with GitHub Pages:** on GitHub, open the repository's
+**Settings → Pages**, set *Source* to "Deploy from a branch", pick your main
+branch and the `/ (root)` folder, and save. After a minute the site is at
+`https://<your-username>.github.io/<repository-name>/web/`.
+
+Run the web tests with Node.js 18+: `node --test web/shield-core.test.js`
+(they also check that web and desktop vault files are interchangeable, so they
+need Python with `cryptography` installed; set `PYTHON=` to its path if needed).
+
 ## How to run it
 
 1. Install Python 3.9 or newer from <https://www.python.org/downloads/>

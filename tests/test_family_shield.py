@@ -182,6 +182,14 @@ class VaultTests(unittest.TestCase):
             with open(restored, "rb") as handle:
                 self.assertEqual(handle.read(), b"%PDF policy")
 
+    def test_web_download_name_is_accepted(self):
+        with tempfile.TemporaryDirectory() as folder:
+            web_file = os.path.join(folder, "policy.pdf.fsv.txt")
+            with open(web_file, "wb") as handle:
+                handle.write(vault.encrypt_bytes(b"%PDF", "pw"))
+            restored = vault.decrypt_file(web_file, "pw")
+            self.assertEqual(restored, os.path.join(folder, "policy.pdf"))
+
     def test_decrypt_requires_fsv_extension(self):
         with self.assertRaises(vault.VaultError):
             vault.decrypt_file("notes.txt", "pw")

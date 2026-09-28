@@ -84,11 +84,15 @@ def encrypt_file(path, passphrase):
 
 def decrypt_file(path, passphrase):
     """Restore the original from a .fsv file. Returns the restored path."""
-    if not path.endswith(EXTENSION):
+    # The web version may save vault files as ".fsv.txt" where ".fsv" isn't allowed.
+    for ending in (EXTENSION, EXTENSION + ".txt"):
+        if path.endswith(ending):
+            out_path = path[:-len(ending)]
+            break
+    else:
         raise VaultError(f"Expected a file ending in {EXTENSION}.")
     with open(path, "rb") as handle:
         blob = handle.read()
     data = decrypt_bytes(blob, passphrase)
-    out_path = path[:-len(EXTENSION)]
     _write_new_file(out_path, data)
     return out_path
