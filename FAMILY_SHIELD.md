@@ -51,7 +51,7 @@ python -m family_shield
 
 ## How it is tested
 
-The 49 Python tests in `tests/test_family_shield.py` (and 16 matching JavaScript
+The 48 Python tests in `tests/test_family_shield.py` (and 16 matching JavaScript
 tests in `web/shield-core.test.js`) are a good way to learn how security
 software gets checked. They include:
 
