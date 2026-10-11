@@ -18,7 +18,9 @@ so reading the code is part of learning.
 
 The `web/` folder is the same toolkit as a web page: open `web/index.html` in any
 browser. Everything runs on your own device; documents and passwords are never
-uploaded. Files locked on the web page unlock in the desktop program, and the
+uploaded, and the page's Content Security Policy makes the browser itself block
+any request to a server other than the breach service. The web vault handles
+files up to 100 MB; use the desktop program for bigger ones. Files locked on the web page unlock in the desktop program, and the
 other way round.
 
 **Put it online free with GitHub Pages:** on GitHub, open the repository's
@@ -49,7 +51,8 @@ python -m family_shield
 
 ## How it is tested
 
-The 44 tests in `tests/test_family_shield.py` are a good way to learn how security
+The 49 Python tests in `tests/test_family_shield.py` (and 16 matching JavaScript
+tests in `web/shield-core.test.js`) are a good way to learn how security
 software gets checked. They include:
 
 - **Attack cases:** disguised common passwords (`P@ssw0rd123`), look-alike
@@ -60,6 +63,19 @@ software gets checked. They include:
 - **Privacy test:** the breach lookup must never send the password or its full hash.
 - **Fuzzing:** thousands of random junk inputs must never crash a tool.
 - **False-alarm tests:** real sites (SBI, HDFC, Google, Amazon) must come out clean.
+- **Same answers everywhere:** the web tests run the desktop program too and
+  require identical password ratings, link warnings and vault files.
+
+### How well the link checker works
+
+Measured on a held-out set of 44 realistic Indian scam links and 52 real sites,
+written before the latest rules were designed (so the rules couldn't be tuned
+to pass it): **38 of 44 scams caught (86%), 0 false alarms.** Before those rules
+it caught 22 (50%).
+
+It still misses scams with no brand name and only one pressure word, such as
+`kbc-lottery-2026.in` or `indiapost-parcel-hold.com`, and number-for-letter
+look-alikes such as `amaz0n.in` or `paypa1.com` (see the ideas below).
 - **Menu tests:** the whole program is driven with scripted typing, including
   mistakes like mismatched passphrases, wrong file paths and invalid menu choices.
 
@@ -95,5 +111,7 @@ Work through these in order. Each one connects to a part of this project.
 - Add a "has my email been in a breach?" check (needs a Have I Been Pwned API key).
 - Encrypt a whole folder at once instead of one file.
 - Detect look-alike domains such as `amaz0n.com` or `paypa1.com`.
+- Catch brand-free scams like `kbc-lottery-2026.in`, then measure it on a fresh
+  held-out set of links you haven't looked at while writing the rule.
 - Build a simple graphical window with `tkinter` so parents can use it.
 - Scan your home network to list connected devices (learn `nmap` first).

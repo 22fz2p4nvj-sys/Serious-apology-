@@ -198,11 +198,33 @@
 
   const SHORTENERS = new Set(["bit.ly", "tinyurl.com", "t.co", "goo.gl", "is.gd", "cutt.ly",
     "ow.ly", "rb.gy", "shorturl.at", "tiny.cc", "rebrand.ly"]);
-  const RISKY_TLDS = new Set(["xyz", "top", "click", "zip", "mov", "icu", "buzz", "live", "rest", "cam"]);
-  const BAIT_WORDS = ["login", "verify", "secure", "account", "update", "kyc", "bank", "wallet",
-    "refund", "reward", "prize", "otp", "password", "support", "unlock"];
+  // Endings that reports on abused domains rank highest for scams.
+  const RISKY_TLDS = new Set(["xyz", "top", "click", "zip", "mov", "icu", "buzz", "live", "rest", "cam",
+    "online", "site", "shop", "info", "cfd", "sbs", "bond", "monster", "lol", "quest", "win", "loan",
+    "ga", "tk", "ml", "cf", "gq"]);
+  const BAIT_WORDS = [
+    "login", "verify", "secure", "account", "update", "kyc", "bank", "wallet", "otp", "password",
+    "support", "unlock", "alert", "blocked", "suspend", "expire", "helpdesk",
+    "refund", "reward", "prize", "lottery", "winner", "lucky", "gift", "free", "bonus", "cashback",
+    "claim", "recharge", "redeem",
+    "bill", "electricity", "parcel", "customs", "courier", "penalty"];
+  // Big global names plus India's major banks, UPI apps, telecoms, shopping sites and IRCTC.
   const BRANDS = ["paypal", "amazon", "google", "microsoft", "apple", "netflix", "whatsapp",
-    "facebook", "instagram", "sbi", "hdfc", "icici", "paytm", "phonepe", "flipkart"].sort();
+    "facebook", "instagram",
+    "sbi", "onlinesbi", "yono", "hdfc", "hdfcbank", "icici", "icicibank", "axisbank", "kotak", "pnb",
+    "bankofbaroda", "canara", "canarabank", "unionbank", "idfc", "yesbank", "indusind",
+    "paytm", "phonepe", "googlepay", "gpay", "bhim", "npci", "mobikwik",
+    "jio", "airtel", "bsnl", "flipkart", "myntra", "meesho", "irctc", "lic"].sort();
+  // Everyday words ("pineapple") are only matched whole, never glued inside a longer word.
+  const EVERYDAY_WORD_BRANDS = new Set(["apple"]);
+  // Real Indian government sites always end in .gov.in or .nic.in.
+  const GOVERNMENT_SERVICES = ["aadhaar", "aadhar", "uidai", "incometax", "epfo", "pmkisan", "yojana",
+    "parivahan", "challan", "passport"];
+  const FREE_SITE_BUILDERS = ["sites.google.com", "forms.gle", "forms.office.com", "web.app",
+    "firebaseapp.com", "netlify.app", "vercel.app", "pages.dev", "github.io", "gitlab.io", "glitch.me",
+    "000webhostapp.com", "blogspot.com", "wixsite.com", "weebly.com", "webflow.io", "ngrok-free.app",
+    "ngrok.io", "trycloudflare.com", "replit.app", "onrender.com", "herokuapp.com", "square.site",
+    "godaddysites.com", "carrd.co", "mystrikingly.com", "jimdosite.com"];
   const COUNTRY_SECOND_LEVELS = new Set(["co", "com", "org", "net", "gov", "ac", "edu"]);
   const INVALID = ["This doesn't look like a valid web address."];
 
@@ -213,6 +235,32 @@
     return parts.slice(-keep).join(".");
   }
 
+  // The brand this address borrows without belonging to it, if any.
+  function imitatedBrand(hostWords, domainName) {
+    for (const brand of BRANDS) {
+      if (domainName === brand) continue;
+      if (hostWords.has(brand)) return brand;
+      // Brand glued to bait, as in "hdfcbank-netbanking.com". Only hyphenated
+      // names count, so real sites such as "hdfclife.com" are left alone.
+      if (brand.length >= 4 && !EVERYDAY_WORD_BRANDS.has(brand) &&
+          domainName.includes("-") && domainName.includes(brand)) return brand;
+    }
+    return null;
+  }
+
+  function pretendsToBeGovernment(host) {
+    if (host.endsWith(".gov.in") || host.endsWith(".nic.in")) return false;
+    if (GOVERNMENT_SERVICES.some((service) => host.includes(service))) return true;
+    // "gov" as its own word, unless it is another country's real government site (usa.gov, gov.uk).
+    const words = host.split(/[.-]/);
+    return (words.includes("gov") || words.includes("govt")) && !/(^|\.)gov(\.[a-z]{2})?$/.test(host);
+  }
+
+  function onFreeSiteBuilder(host, path) {
+    if (host === "docs.google.com" && path.startsWith("/forms")) return true;
+    return FREE_SITE_BUILDERS.some((site) => host === site || host.endsWith("." + site));
+  }
+
   function checkLink(input) {
     let url = String(input).trim();
     if (/^(javascript|data|file|vbscript):/i.test(url)) {
@@ -221,15 +269,16 @@
     const hasScheme = url.includes("://");
     if (!hasScheme) url = "https://" + url;
 
-    // The browser's URL parser quietly rewrites tricky hosts (a Cyrillic letter
-    // becomes "xn--...", 3232235777 becomes 192.168.1.1), so we also keep the
-    // host exactly as it was typed.
-    const typedAuthority = (url.split("://")[1] || "").split(/[/?#]/)[0];
+    // The browser's URL parser checks the address is real, but it also quietly
+    // rewrites tricky hosts (a Cyrillic letter becomes "xn--...", 3232235777
+    // becomes 192.168.1.1). So every check below looks at the host exactly as
+    // it was typed, the same way the desktop version does.
     let parsed;
     try { parsed = new URL(url); } catch (notAUrl) { return INVALID; }
-    const host = parsed.hostname.toLowerCase().replace(/\.+$/, "");
+    if (!parsed.hostname) return INVALID;
+    const typedAuthority = (url.split("://")[1] || "").split(/[/?#]/)[0];
+    const host = typedAuthority.split("@").pop().replace(/:\d*$/, "").toLowerCase().replace(/\.+$/, "");
     if (!host) return INVALID;
-    const typedHost = typedAuthority.split("@").pop().replace(/:\d*$/, "").toLowerCase().replace(/\.+$/, "");
     const warnings = [];
 
     if (hasScheme && parsed.protocol !== "https:") {
@@ -238,16 +287,18 @@
     if (typedAuthority.includes("@")) {
       warnings.push("Contains '@': the real site is the part AFTER the @, not before.");
     }
-    const typedIsNumeric = typedHost.split(".").every((part) => /^(0x[0-9a-f]+|\d+)$/.test(part));
-    if (host.startsWith("[") || (/^\d+\.\d+\.\d+\.\d+$/.test(host) && /^\d+\.\d+\.\d+\.\d+$/.test(typedHost))) {
+    const normalized = parsed.hostname;
+    // A plainly written IP stays the same after the browser reads it; "0177.0.0.1"
+    // (octal) or "127.1" get rewritten, which means they were disguised.
+    if (normalized.startsWith("[") || (/^\d+\.\d+\.\d+\.\d+$/.test(normalized) && normalized === host)) {
       warnings.push("Uses a raw IP address instead of a name - real banks never do this.");
-    } else if (typedIsNumeric) {
+    } else if (host.split(".").every((part) => /^(0x[0-9a-f]+|\d+)$/.test(part))) {
       warnings.push("Uses a disguised IP address (a number instead of a name).");
     }
-    if (/[^\x00-\x7f]/.test(typedHost)) {
+    if (/[^\x00-\x7f]/.test(host)) {
       warnings.push("Uses non-English letters that can imitate real ones (e.g. Cyrillic 'а').");
     }
-    if (typedHost.startsWith("xn--") || typedHost.includes(".xn--")) {
+    if (host.startsWith("xn--") || host.includes(".xn--")) {
       warnings.push("Uses look-alike international letters (punycode) to imitate a real name.");
     }
     if (SHORTENERS.has(host)) warnings.push("Shortened link hides the real destination.");
@@ -261,12 +312,15 @@
     const domain = registeredDomain(host);
     const domainName = domain.split(".")[0];
     // Split "paypal-secure.login.xyz" into words so "pineapple" isn't "apple".
-    const hostWords = new Set(host.split(".").slice(0, -1).join(".").split(/[.-]/));
-    for (const brand of BRANDS) {
-      if (hostWords.has(brand) && domainName !== brand) {
-        warnings.push(`Mentions '${brand}' but the site actually belongs to '${domain}'.`);
-        break;
-      }
+    const beforeEnding = host.includes(".") ? host.slice(0, host.lastIndexOf(".")) : host;
+    const brand = imitatedBrand(new Set(beforeEnding.split(/[.-]/)), domainName);
+    if (brand) warnings.push(`Mentions '${brand}' but the site actually belongs to '${domain}'.`);
+    if (pretendsToBeGovernment(host)) {
+      warnings.push("Pretends to be a government service, but real Indian government sites end in .gov.in or .nic.in.");
+    }
+    if (onFreeSiteBuilder(host, parsed.pathname)) {
+      warnings.push("Made with a free website or form service - anyone can create a page like this. " +
+        "Never type bank details, card numbers or OTPs into it.");
     }
     // Only the site name matters here: real sites also have "/login" pages.
     const bait = BAIT_WORDS.filter((word) => host.includes(word)).sort();
@@ -330,6 +384,13 @@
 
   class VaultError extends Error {}
 
+  // The browser holds the whole file in memory as text while locking it. In
+  // testing a 420 MB file crashed it outright, and budget phones have far less
+  // room, so bigger files belong in the desktop program.
+  const MAX_FILE_BYTES = 100 * 1024 * 1024;
+  const MAX_LOCKED_BYTES = MAGIC.length + SALT_SIZE + Math.ceil((MAX_FILE_BYTES + 128) / 3) * 4;
+  const TOO_BIG = "Files over 100 MB are too big for the web vault. Use the Family Shield desktop program for them.";
+
   // Same settings as the Python version (n=2**15, r=8, p=1): slow on purpose.
   async function deriveKey(passphrase, salt, onProgress) {
     const bytes = encoder.encode(passphrase.normalize("NFC"));
@@ -367,6 +428,7 @@
   }
 
   async function encryptBytes(data, passphrase, onProgress) {
+    if (data.length > MAX_FILE_BYTES) throw new VaultError(TOO_BIG);
     const salt = crypto.getRandomValues(new Uint8Array(SALT_SIZE)); // fresh salt for every file
     const { signing, encryption } = await fernetKeys(await deriveKey(passphrase, salt, onProgress));
     const iv = crypto.getRandomValues(new Uint8Array(16));
@@ -384,6 +446,7 @@
   }
 
   async function decryptBytes(blob, passphrase, onProgress) {
+    if (blob.length > MAX_LOCKED_BYTES) throw new VaultError(TOO_BIG);
     if (!isVaultFile(blob)) throw new VaultError("This is not a Family Shield vault file.");
     const wrong = new VaultError("Wrong passphrase, or the file was damaged/tampered with.");
     const salt = blob.slice(MAGIC.length, MAGIC.length + SALT_SIZE);
@@ -406,6 +469,6 @@
     checkStrength, estimateEntropyBits, isCommonPassword, sha1Hex, countInBreachResponse, timesSeenInBreaches,
     WORDS, generatePassphrase, passphraseEntropyBits, randomBelow,
     checkLink, QUESTIONS, scoreAnswers,
-    encryptBytes, decryptBytes, isVaultFile, VaultError,
+    encryptBytes, decryptBytes, isVaultFile, VaultError, MAX_FILE_BYTES, MAX_LOCKED_BYTES, TOO_BIG,
   };
 });

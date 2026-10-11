@@ -202,7 +202,13 @@ class LinkTests(unittest.TestCase):
                     "HTTPS://WWW.GOOGLE.COM", "https://google.com.",
                     "https://www.onlinesbi.sbi/login/account", "https://mail.google.co.in",
                     "https://netbanking.hdfcbank.com", "https://1password.com",
-                    "https://www.irctc.co.in", "  https://paypal.me/x  "):
+                    "https://www.irctc.co.in", "  https://paypal.me/x  ",
+                    # Government, bank and UPI sites the new rules must leave alone
+                    "https://uidai.gov.in", "https://eportal.incometax.gov.in", "https://sbi.co.in",
+                    "https://www.hdfcbank.com", "https://www.npci.org.in", "https://pay.google.com",
+                    "https://www.cybercrime.gov.in", "https://yonobusiness.sbi", "https://kite.zerodha.com",
+                    "https://login.microsoftonline.com", "https://www.usa.gov",
+                    "https://docs.google.com/document/d/abc/edit"):
             self.assertEqual(links.check_link(url), [], url)
 
     def test_scam_links_flagged(self):
@@ -223,6 +229,41 @@ class LinkTests(unittest.TestCase):
                     "javascript:alert(1)",
                     "DATA:text/html,<script>"):
             self.assertTrue(links.check_link(url), url)
+
+    def test_indian_scam_patterns_flagged(self):
+        cases = {
+            # Government impersonation
+            "https://uidai-aadhaar-update.com": "government",
+            "https://aadhaar-kyc.gov-in.co": "government",
+            "https://incometax.gov.in.refund-status.com": "government",
+            "https://epfo-claim-status.in": "government",
+            "https://pm-kisan-yojana.online/apply": "government",
+            # Indian brands, alone or glued to bait words
+            "https://irctc-refund.in": "irctc",
+            "https://kotak-kyc.in": "kotak",
+            "https://free-recharge-jio.in": "jio",
+            "https://onlinesbi-kyc.co/verify": "onlinesbi",
+            "https://googlepay-reward.in": "google",
+            "http://hdfcbank-netbanking.com/login": "hdfc",
+            # Free website and form builders
+            "https://sites.google.com/view/sbi-kyc-update": "free website",
+            "https://forms.gle/AbCdEf": "free website",
+            "https://hdfc-netbanking.netlify.app": "free website",
+            # Pressure words alone
+            "https://electricity-bill-update.in": "pressure words",
+            "https://customs-parcel-fee.com": "pressure words",
+        }
+        for url, expected in cases.items():
+            warnings = " ".join(links.check_link(url))
+            self.assertIn(expected, warnings, url)
+
+    def test_everyday_words_are_not_brands(self):
+        self.assertEqual(links.check_link("https://pineapple-express.com"), [])
+        self.assertEqual(links.check_link("https://www.hdfclife.com"), [])
+
+    def test_hindi_digits_are_not_an_ip_address(self):
+        warnings = " ".join(links.check_link("http://१२३"))
+        self.assertNotIn("IP address", warnings)
 
     def test_invalid_input(self):
         for url in ("", "   ", "http://[bad", "https://"):

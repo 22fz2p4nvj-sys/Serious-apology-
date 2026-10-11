@@ -99,6 +99,39 @@ test("links: real sites are clean, scams are flagged, junk is invalid", () => {
   }
 });
 
+const INDIAN_SCAMS = {
+  "https://uidai-aadhaar-update.com": "government", "https://aadhaar-kyc.gov-in.co": "government",
+  "https://incometax.gov.in.refund-status.com": "government", "https://epfo-claim-status.in": "government",
+  "https://pm-kisan-yojana.online/apply": "government", "https://irctc-refund.in": "irctc",
+  "https://kotak-kyc.in": "kotak", "https://free-recharge-jio.in": "jio", "https://onlinesbi-kyc.co/verify": "onlinesbi",
+  "https://googlepay-reward.in": "google", "http://hdfcbank-netbanking.com/login": "hdfc",
+  "https://sites.google.com/view/sbi-kyc-update": "free website", "https://forms.gle/AbCdEf": "free website",
+  "https://hdfc-netbanking.netlify.app": "free website", "https://electricity-bill-update.in": "pressure words",
+  "https://customs-parcel-fee.com": "pressure words",
+};
+const INDIAN_REAL = ["https://uidai.gov.in", "https://eportal.incometax.gov.in", "https://sbi.co.in",
+  "https://www.hdfcbank.com", "https://www.npci.org.in", "https://pay.google.com", "https://www.cybercrime.gov.in",
+  "https://yonobusiness.sbi", "https://kite.zerodha.com", "https://login.microsoftonline.com", "https://www.usa.gov",
+  "https://docs.google.com/document/d/abc/edit", "https://pineapple-express.com", "https://www.hdfclife.com"];
+
+test("links: Indian scam patterns flagged, real Indian sites clean", () => {
+  for (const [url, expected] of Object.entries(INDIAN_SCAMS)) assert.match(FS.checkLink(url).join(" "), new RegExp(expected), url);
+  for (const url of INDIAN_REAL) assert.deepStrictEqual(FS.checkLink(url), [], url);
+  assert.doesNotMatch(FS.checkLink("http://१२३").join(" "), /IP address/);
+});
+
+test("links: exactly the same warnings as the Python version", () => {
+  // Includes addresses with non-English letters, which the browser rewrites internally.
+  const urls = [...CLEAN, ...SCAMS, ...Object.keys(INDIAN_SCAMS), ...INDIAN_REAL,
+    "https://ß.com", "https://sbiß.in", "https://उदाहरण.भारत", "https://pay-pal.xn--80ak6aa92e.com", "sbi-in",
+    "http://user@१२३", "https://a.b.c.d.example.com", "https://www.sbi.co.in@evil-site.ru/login"];
+  const script = "import json,sys\nfrom family_shield import links\n" +
+    "print(json.dumps([links.check_link(u) for u in json.load(sys.stdin)]))";
+  const python = JSON.parse(execFileSync(process.env.PYTHON || "python3", ["-c", script],
+    { input: JSON.stringify(urls), cwd: path.join(__dirname, "..") }).toString());
+  urls.forEach((url, i) => assert.deepStrictEqual(FS.checkLink(url), python[i], url));
+});
+
 test("links: fuzzing never crashes", () => {
   const pieces = ["http://", "https://", "@", "[", "]", ":", "/", "xn--", ".", "-", "0x", "paypal", "%", "\\",
     "?", "#", "\x00", "а", "é", " ", "::1", ":99999", "😀"];
@@ -153,6 +186,16 @@ test("vault: tampering, truncation and garbage are all rejected", async () => {
     junk.set(enc("FSV1"));
     await assert.rejects(FS.decryptBytes(junk, "pw"), FS.VaultError);
   }
+});
+
+test("vault: files too big for the browser are refused with a clear message", async () => {
+  await assert.rejects(FS.encryptBytes(new Uint8Array(FS.MAX_FILE_BYTES + 1), "pw"), /too big for the web vault/);
+  const huge = new Uint8Array(FS.MAX_LOCKED_BYTES + 1);
+  huge.set(enc("FSV1"));
+  await assert.rejects(FS.decryptBytes(huge, "pw"), /too big for the web vault/);
+  // The largest allowed file's locked copy must still fit under the unlock limit.
+  const lockedSize = 4 + 16 + Math.ceil((1 + 8 + 16 + (Math.floor(FS.MAX_FILE_BYTES / 16) + 1) * 16 + 32) / 3) * 4;
+  assert.ok(lockedSize <= FS.MAX_LOCKED_BYTES, `${lockedSize} > ${FS.MAX_LOCKED_BYTES}`);
 });
 
 test("vault: files are interchangeable with the Python program", async () => {
